@@ -191,7 +191,7 @@ cue_var_gf<-function(param,df,x=c(FALSE,TRUE),omega.hat=NULL, theta.hat=NULL){ #
 #' @param alpha Confidence interval has level 1-alpha. Default is 0.05
 #' @param diagnostics Should the function returns the residual plot for assumption diagnosis. Default is FALSE
 #'
-#' @details When there are observed covariates, there are functions
+#' @details When there are observed covariates x, there are functions to be estimated by nonparametric kernel, which makes computation slow.
 #' @return A list
 #' \describe{
 #' \item{beta.hat}{Estimated causal effect}
@@ -208,8 +208,8 @@ cue_var_gf<-function(param,df,x=c(FALSE,TRUE),omega.hat=NULL, theta.hat=NULL){ #
 #'
 #' @examples
 #' df<-data_gen(m=20,n=1e5,beta=0.4,gamma=0.1)
-#' cue(df$z,df$a,df$y,diagnostics=TRUE)
-cue<-function(z,a,y,x=NULL,alpha=0.05, diagnostics=FALSE){ # this function integrates previous functions
+#' mr.genius(df$z,df$a,df$y,diagnostics=TRUE)
+mr.genius<-function(z,a,y,x=NULL,alpha=0.05, diagnostics=FALSE){ # this function integrates previous functions
   if(is.null(x)){
     df<-list(z=z,a=a,y=y)
     use.x<-FALSE
