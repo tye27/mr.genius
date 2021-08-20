@@ -197,7 +197,6 @@ cue_var_gf<-function(param,df,x=c(FALSE,TRUE),omega.hat=NULL, theta.hat=NULL){ #
 #' \item{beta.hat}{Estimated causal effect}
 #' \item{beta.se}{Standard error of \code{beta.hat}}
 #' \item{ci}{A 1-alpha confidence interval}
-#' \item{cue.obj.value}{The CUE objective function evaluated at \code{beta.hat}}
 #' \item{condition}{A measure that needs to be large for reliable asymptotic approximation based on the GENIUS-MAWII estimator. It is recommended to be greater than 50}
 #' }
 #'
@@ -237,7 +236,7 @@ mr.genius<-function(z,a,y,x=NULL,alpha=0.05, diagnostics=FALSE){ # this function
   z.alpha<-qnorm(alpha/2,lower.tail = FALSE)
   ci<-c(opt.res[1]-z.alpha*se, opt.res[1]+z.alpha*se)
   #CP<-1*(beta0> ci[1] & beta0<ci[2])
-  out<-list(beta.hat=opt.res[1], beta.se=se, ci=ci, cue.obj.value=cue.obj.value, #CP=CP, #f.statistic=f.statistic,
+  out<-list(beta.hat=opt.res[1], beta.se=se, ci=ci, #cue.obj.value=cue.obj.value, #CP=CP, #f.statistic=f.statistic,
             condition=tmp$strength_full)
   if(diagnostics){
     if(is.null(x)){

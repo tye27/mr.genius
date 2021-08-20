@@ -25,7 +25,6 @@ A list
 \item{beta.hat}{Estimated causal effect}
 \item{beta.se}{Standard error of \code{beta.hat}}
 \item{ci}{A 1-alpha confidence interval}
-\item{cue.obj.value}{The CUE objective function evaluated at \code{beta.hat}}
 \item{condition}{A measure that needs to be large for reliable asymptotic approximation based on the GENIUS-MAWII estimator. It is recommended to be greater than 50}
 }
 }
