@@ -33,7 +33,7 @@ A list
 Main function for GENIUS-MAWII
 }
 \details{
-Computation is fast in the case of no \code{x}. When there are observed covariates x, there are functions to be estimated by nonparametric kernel, which makes computation slow.
+Computation is fast in the case of no \code{x}. When there are observed covariates \code{x}, there are functions to be estimated by nonparametric kernel, which makes computation slow.
 }
 \examples{
 df<-data_gen(m=20,n=1e5,beta=0.4,gamma=0.1)
