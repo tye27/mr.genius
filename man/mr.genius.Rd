@@ -13,7 +13,7 @@ mr.genius(z, a, y, x = NULL, alpha = 0.05, diagnostics = FALSE)
 
 \item{y}{A n-dimentional vector for the outcome}
 
-\item{x}{A n-dimentional vector for the covariate. Default is NULL, when there is no covariates}
+\item{x}{A n*p matrix for the covariate, where p is the number of covariates. Default is NULL, when there is no covariates}
 
 \item{alpha}{Confidence interval has level 1-alpha. Default is 0.05}
 
@@ -25,18 +25,19 @@ A list
 \item{beta.hat}{Estimated causal effect}
 \item{beta.se}{Standard error of \code{beta.hat}}
 \item{ci}{A 1-alpha confidence interval}
-\item{condition}{A measure that needs to be large for reliable asymptotic approximation based on the GENIUS-MAWII estimator. It is recommended to be greater than 50}
+\item{J}{J statistic, which is often used to test overidentification. J statistic larger than 1-alpha quantile of chi-square distribution (df=dim(Z)-1) indicates that not all SNPs satisfy our assumptions.}
+\item{f.statistic}{F-statistic as a measure of weak identification. It is recommended to be larger than 2.}
 }
 }
 \description{
 Main function for GENIUS-MAWII
 }
-\details{
-Computation is fast in the case of no \code{x}. When there are observed covariates \code{x}, there are functions to be estimated by nonparametric kernel, which makes computation slow.
-}
 \examples{
 df<-data_gen(m=20,n=1e5,beta=0.4,gamma=0.1)
 mr.genius(df$z,df$a,df$y,diagnostics=TRUE)
+
+  df<-data_gen_x(m=10,n=2e3,beta=0.4,gamma=1)
+  mr.genius(df$z,df$a,df$y,df$x)
 }
 \references{
 Ting Ye, Zhonghua Liu, Baoluo Sun, and Eric Tchetgen Tchetgen (2021). GENIUS-MAWII: For Robust Mendelian Randomization with Many Weak Invalid Instruments.\url{https://arxiv.org/abs/2107.06238}.

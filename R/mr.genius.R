@@ -49,7 +49,7 @@ data_gen<-function(m,n,beta0,gamma,case="case2"){
 #' \item{z}{A n*m matrix of SNPs.}
 #' \item{a}{A n-dimentional vector for the exposure.}
 #' \item{y}{A n-dimentional vector for the outcome.}
-#' \item{x}{A n-dimentional vector for the covariate.}
+#' \item{x}{A n*2 matrix for the covariate.}
 #' }
 #' @references Ting Ye, Zhonghua Liu, Baoluo Sun, and Eric Tchetgen Tchetgen (2021). GENIUS-MAWII: For Robust Mendelian Randomization with Many Weak Invalid Instruments.\url{https://arxiv.org/abs/2107.06238}.
 #'
@@ -65,9 +65,11 @@ data_gen_x<-function(m,n,beta0,gamma){
     z[,j]<-0*(tmp[1,]==1)+1*(tmp[2,]==1)+2*(tmp[3,]==1)
   }
   u<-rnorm(n,1,1)
-  x<-rnorm(n,0,1)
-  a<-z%*% rep(1,m) +u*x+rnorm(n,0,z %*% z_coef$z_x) # *a* must be heteroscedestic
-  y<-beta0*a+ z%*% rep(1,m)*2+2*u*x+rnorm(n,0,2)
+  x1<-rnorm(n,0,1)
+  x2<-rnorm(n,0,1)
+  x<-cbind(x1,x2)
+  a<-z%*% rep(1,m) +u*x1+u*x2+rnorm(n,0,z %*% z_coef$z_x) # *a* must be heteroscedestic
+  y<-beta0*a+ z%*% rep(1,m)*2+2*u*x1+u*x2+rnorm(n,0,2)
   return(list(z=z, a=a, y=y, x=x))
 }
 
@@ -187,27 +189,30 @@ cue_var_gf<-function(param,df,x=c(FALSE,TRUE),omega.hat=NULL, theta.hat=NULL){ #
 #' @param z A n*m matrix of SNPs, where n is the sample size, m is the number of SNPs
 #' @param a A n-dimentional vector for the exposure
 #' @param y A n-dimentional vector for the outcome
-#' @param x A n-dimentional vector for the covariate. Default is NULL, when there is no covariates
+#' @param x A n*p matrix for the covariate, where p is the number of covariates. Default is NULL, when there is no covariates
 #' @param alpha Confidence interval has level 1-alpha. Default is 0.05
 #' @param diagnostics Should the function returns the residual plot for assumption diagnosis. Default is FALSE
 #'
-#' @details Computation is fast in the case of no \code{x}. When there are observed covariates \code{x}, there are functions to be estimated by nonparametric kernel, which makes computation slow.
 #' @return A list
 #' \describe{
 #' \item{beta.hat}{Estimated causal effect}
 #' \item{beta.se}{Standard error of \code{beta.hat}}
 #' \item{ci}{A 1-alpha confidence interval}
-#' \item{condition}{A measure that needs to be large for reliable asymptotic approximation based on the GENIUS-MAWII estimator. It is recommended to be greater than 50}
+#' \item{J}{J statistic, which is often used to test overidentification. J statistic larger than 1-alpha quantile of chi-square distribution (df=dim(Z)-1) indicates that not all SNPs satisfy our assumptions.}
+#' \item{f.statistic}{F-statistic as a measure of weak identification. It is recommended to be larger than 2.}
 #' }
 #'
 #' @references Ting Ye, Zhonghua Liu, Baoluo Sun, and Eric Tchetgen Tchetgen (2021). GENIUS-MAWII: For Robust Mendelian Randomization with Many Weak Invalid Instruments.\url{https://arxiv.org/abs/2107.06238}.
 #'
-#' @import stats ggplot2 np rootSolve
+#' @import stats ggplot2 rootSolve lmtest sandwich
 #' @export
 #'
 #' @examples
 #' df<-data_gen(m=20,n=1e5,beta=0.4,gamma=0.1)
 #' mr.genius(df$z,df$a,df$y,diagnostics=TRUE)
+#'
+#'   df<-data_gen_x(m=10,n=2e3,beta=0.4,gamma=1)
+#'   mr.genius(df$z,df$a,df$y,df$x)
 mr.genius<-function(z,a,y,x=NULL,alpha=0.05, diagnostics=FALSE){ # this function integrates previous functions
   if(is.null(x)){
     df<-list(z=z,a=a,y=y)
@@ -220,10 +225,8 @@ mr.genius<-function(z,a,y,x=NULL,alpha=0.05, diagnostics=FALSE){ # this function
     a.pred<-lm(a~z+x,data=df)$fitted.values
     z.demean<-apply(df$z,2,function(z) z-lm(z~df$x)$fitted.values) # n*m matrix
     y.pred<-lm(y~z+x,data=df)$fitted.values
-    bw.omega <- npregbw((df$a-a.pred)*(df$y-y.pred)~df$x)
-    bw.theta <- npregbw((df$a-a.pred)^2~df$x)
-    omega.hat<-predict(npreg(bw.omega))
-    theta.hat<-predict(npreg(bw.theta))
+    omega.hat <- lm(I((df$a-a.pred)*(df$y-y.pred))~df$x+I(df$x^2))$fitted.values
+    theta.hat <- lm(I((df$a-a.pred)^2)~df$x+I(df$x^2))$fitted.values
   }
   interval<-c(-10,10)
   opt.res<-optimize(cue_obj_gf, df=df,x=use.x,omega.hat=omega.hat, theta.hat=theta.hat,interval=interval)$minimum
@@ -235,9 +238,23 @@ mr.genius<-function(z,a,y,x=NULL,alpha=0.05, diagnostics=FALSE){ # this function
   se<-as.numeric(sqrt(tmp$var_est))
   z.alpha<-qnorm(alpha/2,lower.tail = FALSE)
   ci<-c(opt.res[1]-z.alpha*se, opt.res[1]+z.alpha*se)
-  #CP<-1*(beta0> ci[1] & beta0<ci[2])
-  out<-list(beta.hat=opt.res[1], beta.se=se, ci=ci, #cue.obj.value=cue.obj.value, #CP=CP, #f.statistic=f.statistic,
-            condition=tmp$strength_full)
+  if(is.null(x)){
+    # robust F statistic
+    a.pred<-lm(a~z,data=df)$fitted.values
+    a.resid<-df$a-a.pred
+    z.demean<-apply(df$z,2,function(x) x-mean(x)) # n*m matrix
+    genius.exp<-a.resid^2-mean(a.resid^2)
+    fit3<-lm(genius.exp~z.demean)
+    lmtest.res<-lmtest::waldtest(lm(genius.exp~1), fit3, vcov = vcovHC(fit3, type = "HC0"))
+  }else if (!is.null(x)){
+    a.pred<-lm(a~z+x,data=df)$fitted.values
+    a.resid<-df$a-a.pred
+    z.resid<-apply(df$z,2,function(z) z-lm(z~df$x)$fitted.values) # n*m matrix
+    genius.exp<-a.resid^2-lm(I(a.resid^2)~df$x)$fitted.values
+    fit3<-lm(genius.exp~z.resid)
+    lmtest.res<-lmtest::waldtest(lm(genius.exp~1), fit3, vcov = vcovHC(fit3, type = "HC0"))
+  }
+  out<-list(beta.hat=opt.res[1], beta.se=se, ci=ci, J=2*cue.obj.value*length(df$a) ,f.statistic=  lmtest.res$F[2])
   if(diagnostics){
     if(is.null(x)){
       a.pred<-lm(a~z,data=df)$fitted.values

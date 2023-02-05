@@ -21,7 +21,7 @@ A list
 \item{z}{A n*m matrix of SNPs.}
 \item{a}{A n-dimentional vector for the exposure.}
 \item{y}{A n-dimentional vector for the outcome.}
-\item{x}{A n-dimentional vector for the covariate.}
+\item{x}{A n*2 matrix for the covariate.}
 }
 }
 \description{
