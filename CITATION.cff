@@ -1,10 +1,10 @@
-cff-version: 1.1.0
-message: "If you use this software, please cite it as below."
+cff-version: 1.2.0
+message: "Please cite the package as below."
 authors:
   - family-names: Ye
     given-names: Ting
-title: tye27/mr.genius: GENIUS-MAWII: For Robust Mendelian Randomization with Many Weak Invalid Instruments
+title: "mr.genius: GENIUS-MAWII: For Robust Mendelian Randomization with Many Weak Invalid Instruments"
 version: 0.1.0
 doi: 10.5281/zenodo.8331811
-date-released: 2023-09-10
-            
+date-released: 2023-09-09
+
